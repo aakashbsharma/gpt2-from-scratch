@@ -1,0 +1,41 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.ipynb_checkpoints
+
+# Environment
+.env
+*.env
+*.venv/
+myenv/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Model checkpoints, logs, and runs
+*.pt
+*.pth
+*.ckpt
+*.log
+checkpoints/
+logs/
+runs/
+
+# Large datasets
+data/
+*.csv
+*.json
+
+# Notebooks output
+*.out
+*.pdf
+*.png
+
+# VSCode / IDE
+.vscode/
+.idea/
+
+# Jupyter Notebook runtime
+.ipynb_checkpoints/
