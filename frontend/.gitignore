@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-static
+*.tsbuildinfo
+*.local
+.DS_Store
+
+# Never commit tsc output next to the sources. `tsconfig.json` sets noEmit, so
+# this only triggers if the typecheck script is given an emit flag again — and a
+# stray vite.config.js silently shadows vite.config.ts, which Vite resolves first.
+src/**/*.js
+vite.config.js
+
+# One-off scratch file from the type-contract check (see docs/trace-schema.md).
+# Kept locally, not committed: it is a single-use generator, not part of the app.
+_gen.ts_check.py

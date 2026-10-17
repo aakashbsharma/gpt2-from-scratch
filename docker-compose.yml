@@ -1,0 +1,62 @@
+# Full stack: FastAPI backend + nginx-served frontend.
+#
+#   docker compose up --build
+#
+# The frontend image proxies /api to the backend (see frontend/nginx.conf), so
+# the browser only ever talks to one origin: no CORS preflight, and the
+# WebSocket upgrade needs no client-side origin configuration.
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      # Point at a volume-backed cache so the 500 MB checkpoint is fetched once.
+      GPT2_CHECKPOINT_DIR: /checkpoints/gpt2
+      GPT2_SCRATCH_CHECKPOINT: /checkpoints/scratch.pt
+      # The frontend is same-origin through nginx, but name it anyway: it costs
+      # nothing and covers direct access to :8000 for debugging.
+      GPT2_CORS_ORIGINS: http://localhost:5173,http://localhost:8080
+      GPT2_TEXT_FILE: /corpus/the-verdict.txt
+    volumes:
+      - checkpoints:/checkpoints
+      # The training corpus lives at the repo root, outside this directory.
+      - ../the-verdict.txt:/corpus/the-verdict.txt:ro
+    ports:
+      # Exposed for /docs and for debugging with curl. The frontend does not
+      # need it — nginx reaches the backend over the compose network.
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # Generous: the 124M checkpoint is read from disk on first start, and on
+      # the very first run it downloads ~500 MB before it can answer /health.
+      start_period: 180s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Set to 1 to build a replay-only image with no live mode and no backend
+        # calls at all. Leave unset for the full app, which needs the backend
+        # above. See frontend/.env.static.example.
+        STATIC: ""
+    ports:
+      # Host 8080 rather than 5173, so the compose frontend and a local `npm run
+      # dev` server can run side by side.
+      - "8080:80"
+    depends_on:
+      backend:
+        # service_started, not service_healthy: the frontend is useful the moment
+        # nginx is up, since replay mode works with no backend at all. Waiting for
+        # health would add ~30 s to every cold start for no benefit to the
+        # default path.
+        condition: service_started
+
+volumes:
+  checkpoints:

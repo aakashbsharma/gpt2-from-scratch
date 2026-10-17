@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ink-950 text-slate-200 antialiased;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  /* Tabular figures everywhere a number is compared against another number,
+     so columns of values do not jitter as digits change width. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    @apply font-mono;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-lg border border-ink-700 bg-ink-900/70;
+  }
+
+  .panel-header {
+    @apply flex items-baseline justify-between gap-3 border-b border-ink-700 px-3 py-2;
+  }
+
+  .panel-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-slate-300;
+  }
+
+  .label {
+    @apply text-[11px] uppercase tracking-wider text-slate-500;
+  }
+
+  .value {
+    @apply tnum text-slate-200;
+  }
+
+  .btn {
+    @apply rounded-md border border-ink-600 bg-ink-800 px-2.5 py-1.5 text-xs font-medium text-slate-300
+           transition-colors hover:border-accent-500/60 hover:text-accent-400
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60
+           disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-ink-600 disabled:hover:text-slate-300;
+  }
+
+  .btn-active {
+    @apply border-accent-500 bg-accent-500/15 text-accent-400;
+  }
+
+  /* Causal-mask hatching for the upper triangle of the attention matrix. */
+  .mask-hatch {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(148, 163, 184, 0.16) 0 1px,
+      transparent 1px 5px
+    );
+  }
+}
+
+/* Respect the OS setting: the pipeline's continuous sweep is decorative. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

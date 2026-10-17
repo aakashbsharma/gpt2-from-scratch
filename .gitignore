@@ -1,41 +1,50 @@
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
-*.ipynb_checkpoints
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
 
-# Environment
-.env
-*.env
-*.venv/
-myenv/
-ENV/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Model checkpoints, logs, and runs
+# Model weights and checkpoints
+backend/checkpoints/
+gpt2/
+models/
 *.pt
 *.pth
 *.ckpt
-*.log
-checkpoints/
-logs/
-runs/
+*.bin
+*.safetensors
 
-# Large datasets
-data/
-*.csv
-*.json
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/dist-static/
+frontend/.vite/
+*.local
 
-# Notebooks output
-*.out
-*.pdf
-*.png
+# Local env overrides. `.env.static.example` IS tracked, the real one is not —
+# it is where VITE_BASE / VITE_API_BASE live for a static deploy.
+.env
+.env.*
+!.env.*.example
 
-# VSCode / IDE
+# Generated trace dumps (regenerate with backend/scripts/export_traces.py)
+frontend/public/traces/*.json
+
+# Editors / OS
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
 
-# Jupyter Notebook runtime
-.ipynb_checkpoints/
+node_modules
+dist
+dist-static
+*.tsbuildinfo
+*.local
+.DS_Store
+
+# One-off scratch file from the type-contract check (see docs/trace-schema.md).
+# Kept locally, not committed: it is a single-use generator, not part of the app.
+_gen.ts_check.py

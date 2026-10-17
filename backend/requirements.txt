@@ -1,0 +1,21 @@
+# --- model package ---
+numpy
+torch
+tensorflow
+tqdm
+tiktoken
+requests
+
+# --- API ---
+fastapi
+uvicorn[standard]
+pydantic
+websockets
+
+# --- tests ---
+pytest
+httpx
+
+# Optional: only needed by the `slow` parity tests that compare against
+# HuggingFace. Tests skip themselves when it is absent.
+# transformers
