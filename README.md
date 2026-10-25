@@ -29,7 +29,7 @@ or asciinema/svg-term for a terminal recording.
 | Phase | Scope | State |
 | --- | --- | --- |
 | 1 | `backend/gpt2` pure model package + docs | done |
-| 2 | Tracing: `return_trace`, logit lens, PCA reduction, `generate_stream` | done |
+| 2 | Tracing: `return_trace`, logit lens, PCA reduction, sampling step, `generate_stream` | done |
 | 3 | Test suite (shape, numeric contract, HF parity) | done |
 | 4 | FastAPI app, training + export scripts, compose | done |
 | 5 | `frontend` React app | done |
@@ -126,7 +126,10 @@ docker compose up --build      # or the local dev setup above
 
 Open the app, pick **Live**, set a prompt, press **Generate**. Each new token
 appends to the context and the whole pipeline animates again over the longer
-sequence. **Stop** closes the socket; the traces already received stay on screen.
+sequence. Each step also carries that token's real sampling decision — the
+filtered candidate distribution, the temperature/top-k settings, and the draw —
+which the Sampling panel visualizes. **Stop** closes the socket; the traces
+already received stay on screen.
 
 ### Replay mode
 
@@ -194,7 +197,8 @@ For a subpath deploy (GitHub Pages project sites), set the base path in
                     │   │             │                                │
                     │   │        AttentionHeatmap / Arcs / HeadSelector│
                     │   │             │                                │
-                    │   │        TopKChart ──▶ TokenStrip ──▶ loop     │
+                    │   │   TokenStrip ──▶ Sampling ──▶ loop           │
+                    │   │   Funnel · Draw · Stats · History            │
                     │   └─────────────┴────────────────────────────────┘
                     └──────────────┬──────────────────────────┬────────┘
                      /api/ws/generate                  /traces/*.json
@@ -229,14 +233,19 @@ gpt2-visualizer/
 ├── backend/
 │   ├── gpt2/             pure model package (no web code)
 │   ├── app/              FastAPI: settings, registry, routes
-│   ├── scripts/          train_small.py, export_traces.py
-│   ├── tests/            parity, trace-shape, API route tests
+│   ├── scripts/          train_small.py, export_traces.py, plus ws_probe.py
+│   │                     and silent_ws_server.py (socket debugging helpers)
+│   ├── tests/            parity, trace-shape, settings, API route tests
 │   └── checkpoints/      gitignored weights
 └── frontend/
     ├── src/types/        the JSON contract, mirrored from docs/trace-schema.md
     ├── src/store/        useTraceStore: steps, current step, selected block/head
-    ├── src/hooks/        useLiveGeneration (WebSocket) and useReplay (bundles)
-    ├── src/components/   Pipeline, BlockDetail, Attention*, LogitLens, TopK, Compare
+    ├── src/lib/          api.ts (typed HTTP + WebSocket), env.ts, format.ts
+    ├── src/hooks/        useLiveGeneration / useReplay / useModels / useCompareRun
+    │                     liveImpl.ts vs staticLiveStub.ts for static builds
+    ├── src/components/   Pipeline, BlockDetail, Attention*, LogitLens,
+    │                     ComparePanel, sampling/ (Funnel, Draw, Stats, History)
+    ├── scripts/          smoke.mjs, check-traces.mjs, ws-probe.mjs, inspect-lens
     ├── public/traces/    gitignored exported bundles
     └── Dockerfile        node build -> nginx, proxies /api
 ```
@@ -251,6 +260,10 @@ gpt2-visualizer/
 | `POST` | `/api/trace` | One traced forward pass |
 | `WS` | `/api/ws/generate` | Stream one trace per generated token, then `done` |
 
+`POST /api/trace` runs one forward pass over explicit token ids with no
+sampling, so its trace's `sampling` field is always `null`; the WebSocket path
+is the one that records the sampling decision.
+
 Two models are registered: `openai-124m` (real OpenAI weights; the id becomes
 `openai-355m` etc. when `GPT2_MODEL_SIZE` is set) and `scratch-10ep`
 (from `scripts/train_small.py`, listed as not-ready when its checkpoint is absent).
@@ -261,22 +274,32 @@ Interactive reference at http://localhost:8000/docs.
 
 ```bash
 cd gpt2-visualizer/backend
-pytest                # 168 tests, ~35 s
-pytest -m "not slow"   # 154 tests, ~11 s, no checkpoint needed
-pytest -m slow         # real 124M weights + HuggingFace comparison
+pytest                # 190 tests
+pytest -m "not slow"   # 176 tests, ~40 s, no checkpoint needed
+pytest -m slow         # 14 tests: real 124M weights + HuggingFace comparison
 ```
 
 ```bash
 cd gpt2-visualizer/frontend
 npm run smoke           # renders the real components against the real traces
 npm run smoke:static    # same, against the static-build module graph
+npm run inspect:lens -- effort 0
+                        # renders one LogitLens step and diffs it vs the JSON
 ```
 
-`smoke` asserts numeric invariants on all four recorded traces — the causal
-upper triangle is exactly `0.0`, the deepest logit-lens entry equals
-`top_tokens[0]`, sampling candidates sum to 1 within float16 tolerance — then
-renders each component and checks the output. It is not a browser test; see
-[frontend/README.md](frontend/README.md) for what it does and does not cover.
+`smoke` asserts numeric invariants on all four recorded traces (`effort`,
+`verdict`, `fox`, `life`) — the causal upper triangle is exactly `0.0`, the
+deepest logit-lens entry equals `top_tokens[0]`, sampling candidates sum to 1
+within float16 tolerance — then renders each component and checks the output.
+It is not a browser test; see [frontend/README.md](frontend/README.md) for what
+it does and does not cover.
+
+If generation hangs, two probes split the blame between the two halves of the
+socket path: `python -m scripts.ws_probe` speaks the frontend's exact frame to
+the real backend, and `node scripts/ws-probe.mjs` does the same through the
+Vite dev proxy. `python -m scripts.silent_ws_server 8001` is a server that
+accepts and never answers, for exercising the client-side watchdog against a
+real socket.
 
 ## Using the model directly
 
