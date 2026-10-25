@@ -1,5 +1,10 @@
 # --- model package ---
 numpy
+# Plain PyPI `torch` is CPU-only on Windows. The installed CUDA build already
+# satisfies this requirement (so `pip install -r requirements.txt` leaves it
+# alone); only `pip install --upgrade/--force-reinstall torch` would revert it.
+# To (re)install for the local NVIDIA GPU (RTX 2050):
+#   pip install torch==2.14.1+cu126 --index-url https://download.pytorch.org/whl/cu126
 torch
 tensorflow
 tqdm

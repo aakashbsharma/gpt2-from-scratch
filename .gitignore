@@ -8,7 +8,6 @@ venv/
 
 # Model weights and checkpoints
 backend/checkpoints/
-gpt2/
 models/
 *.pt
 *.pth
@@ -23,10 +22,12 @@ frontend/dist-static/
 frontend/.vite/
 *.local
 
-# Local env overrides. `.env.static.example` IS tracked, the real one is not —
-# it is where VITE_BASE / VITE_API_BASE live for a static deploy.
+# Local env overrides. `.env.example` / `.env.static.example` ARE tracked, the
+# real ones are not — they are where VITE_BASE / VITE_API_BASE live for a static
+# deploy, and where GPT2_* lives for the backend.
 .env
 .env.*
+!.env.example
 !.env.*.example
 
 # Generated trace dumps (regenerate with backend/scripts/export_traces.py)

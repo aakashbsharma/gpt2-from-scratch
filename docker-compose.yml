@@ -13,6 +13,11 @@ services:
       dockerfile: Dockerfile
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     environment:
+      # Published OpenAI size to download and load; the architecture config is
+      # picked to match. Compose interpolates this from the shell or from a
+      # repo-root `.env` (see `.env.example`), so `docker compose up` honours
+      # the same file the local dev server reads.
+      GPT2_MODEL_SIZE: ${GPT2_MODEL_SIZE:-124M}
       # Point at a volume-backed cache so the 500 MB checkpoint is fetched once.
       GPT2_CHECKPOINT_DIR: /checkpoints/gpt2
       GPT2_SCRATCH_CHECKPOINT: /checkpoints/scratch.pt

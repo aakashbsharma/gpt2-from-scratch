@@ -27,7 +27,6 @@ from gpt2 import (
     download_and_load_gpt2,
     generate,
     generate_stream,
-    get_device,
     get_tokenizer,
     load_weights_into_gpt,
 )
@@ -245,7 +244,10 @@ def test_openai_weights_reproduce_notebook_generation():
     """Reproduce the exact string the notebook printed from the real weights."""
     model = _load_openai_model()
     tok = get_tokenizer()
-    device = get_device()
+    # Pinned to CPU: the reference string was produced there, and the cached
+    # model lives on CPU. Sampling under top_k/temperature is not bit-stable
+    # across devices, so running this on the configured GPU could flip tokens.
+    device = next(model.parameters()).device
 
     torch.manual_seed(193)
     out = generate(

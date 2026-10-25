@@ -2,7 +2,9 @@
 
 Two entries:
 
-* ``openai-124m``  - the real GPT-2 124M, weights from OpenAI's checkpoint.
+* ``openai-124m`` (or ``openai-<size>`` when ``GPT2_MODEL_SIZE`` is set) - the
+  real GPT-2, weights from OpenAI's checkpoint. The size selects both the
+  download and the architecture config built to receive it.
 * ``scratch-10ep`` - a small model trained from scratch by
   ``scripts/train_small.py``. Optional: if the checkpoint file is absent the
   entry is still listed but marked not ready, so the UI can say so instead of
@@ -38,7 +40,6 @@ from gpt2 import (
 
 from .schemas import ModelInfo
 from .settings import (
-    MODEL_ID_OPENAI,
     MODEL_ID_SCRATCH,
     MODEL_LABELS,
     Settings,
@@ -122,25 +123,31 @@ class ModelRegistry:
             return self
 
     def _load_openai(self, tokenizer: GPT2Tokenizer, device: torch.device) -> None:
-        try:
-            from gpt2 import GPT_CONFIG_124M
+        """Build the config for ``settings.model_size``, then load those weights.
 
-            model = GPTModel(GPT_CONFIG_124M).eval()
+        The config comes from the size rather than from a constant, so the
+        architecture and the downloaded checkpoint always agree.
+        """
+        model_id = self.settings.openai_model_id
+        try:
+            model = GPTModel(self.settings.openai_model_config).eval()
             _, params = download_and_load_gpt2(
-                "124M", str(self.settings.checkpoint_dir), reuse_existing=True
+                self.settings.model_size,
+                str(self.settings.checkpoint_dir),
+                reuse_existing=True,
             )
             load_weights_into_gpt(model, params)
             model.to(device).eval()
-            self._models[MODEL_ID_OPENAI] = LoadedModel(
-                id=MODEL_ID_OPENAI,
-                label=MODEL_LABELS[MODEL_ID_OPENAI],
+            self._models[model_id] = LoadedModel(
+                id=model_id,
+                label=self.settings.openai_model_label,
                 source="openai",
                 model=model,
                 tokenizer=tokenizer,
                 ready=True,
             )
         except Exception as exc:  # noqa: BLE001 - surface, don't crash startup
-            self.load_errors[MODEL_ID_OPENAI] = f"{type(exc).__name__}: {exc}"
+            self.load_errors[model_id] = f"{type(exc).__name__}: {exc}"
 
     def _load_scratch(self, tokenizer: GPT2Tokenizer, device: torch.device) -> None:
         path = self.settings.scratch_checkpoint

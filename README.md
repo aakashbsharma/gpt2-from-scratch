@@ -58,6 +58,28 @@ GPT2_LOAD_OPENAI_MODEL=0 docker compose up --build
 
 `openai-124m` will be listed with `ready: false` and the UI will say why.
 
+### Choosing the model size
+
+Which OpenAI checkpoint is downloaded is configurable, and the architecture
+config is selected to match it, so the model and the weights can never disagree:
+
+```bash
+# local dev: a .env next to docker-compose.yml (or backend/.env) is read by the backend
+echo "GPT2_MODEL_SIZE=355M" >> .env
+
+# docker: compose interpolates that same .env file, or use the shell
+GPT2_MODEL_SIZE=355M docker compose up --build
+```
+
+Valid sizes are `124M` (default), `355M`, `774M` and `1558M`. The registry id
+follows the size — `openai-355m` — and so does the download, which grows fast:
+~500 MB for 124M, ~1.5 GB for 355M, ~3 GB for 774M, ~6 GB for 1558M. Bigger
+models are also slow to run per token; the traces were designed around 124M.
+
+Copy `.env.example` to `.env` for the full list of backend settings
+(`GPT2_DEVICE`, `GPT2_CHECKPOINT_DIR`, `GPT2_LOAD_OPENAI_MODEL`, ...). Values
+already set in the environment always override what is in the file.
+
 ### Local development
 
 Two terminals. Backend:
@@ -229,7 +251,8 @@ gpt2-visualizer/
 | `POST` | `/api/trace` | One traced forward pass |
 | `WS` | `/api/ws/generate` | Stream one trace per generated token, then `done` |
 
-Two models are registered: `openai-124m` (real OpenAI weights) and `scratch-10ep`
+Two models are registered: `openai-124m` (real OpenAI weights; the id becomes
+`openai-355m` etc. when `GPT2_MODEL_SIZE` is set) and `scratch-10ep`
 (from `scripts/train_small.py`, listed as not-ready when its checkpoint is absent).
 
 Interactive reference at http://localhost:8000/docs.

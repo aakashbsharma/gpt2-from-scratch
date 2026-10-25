@@ -48,7 +48,10 @@ CORS defaults to the Vite dev server (`http://localhost:5173`), overridable via
 
 ### Models
 
-`openai-124m` is the real GPT-2 124M from OpenAI's checkpoint.
+`openai-124m` is the real GPT-2 124M from OpenAI's checkpoint; `GPT2_MODEL_SIZE`
+selects a different published size (`355M`, `774M`, `1558M`), in which case the
+id becomes `openai-355m` and the architecture config is chosen to match the
+downloaded weights.
 `scratch-10ep` comes from `scripts/train_small.py` and is **optional**: if
 `checkpoints/scratch.pt` is absent the entry is still listed with
 `ready: false` and a note, rather than failing startup.
@@ -88,8 +91,12 @@ uvicorn app.main:app --reload --port 8000
 Startup takes ~30 s because the 124M checkpoint is read from disk. Set
 `GPT2_LOAD_OPENAI_MODEL=0` to skip it.
 
-Environment variables: `GPT2_CHECKPOINT_DIR`, `GPT2_SCRATCH_CHECKPOINT`,
-`GPT2_DEVICE`, `GPT2_CORS_ORIGINS`, `GPT2_TEXT_FILE`, `GPT2_LOAD_OPENAI_MODEL`.
+Environment variables: `GPT2_MODEL_SIZE`, `GPT2_CHECKPOINT_DIR`,
+`GPT2_SCRATCH_CHECKPOINT`, `GPT2_DEVICE`, `GPT2_CORS_ORIGINS`, `GPT2_TEXT_FILE`,
+`GPT2_LOAD_OPENAI_MODEL`, `GPT2_USE_SMALL_MODEL`. Locally these can live in a
+`.env` next to `docker-compose.yml` (or `backend/.env`), read at import time by
+a dependency-free loader in `settings.py`; anything already set in the real
+environment wins over the file. `.env.example` documents them all.
 
 ## Training the scratch model
 
